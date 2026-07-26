@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PROVENANCE — Uhrenarchiv</title>
+<title>PROVENANCE — Uhren zum Verkauf</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -15,33 +15,13 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   body{ background:var(--bg); color:var(--ivory); font-family:'Inter',sans-serif; min-height:100vh; -webkit-font-smoothing:antialiased; }
   ::selection{ background:var(--gold-dim); color:var(--ivory); }
+  a{ color:var(--gold); }
 
-  /* ---- Setup notice ---- */
-  #setupNotice{
-    max-width:640px; margin:8vh auto; padding:0 20px;
-  }
-  #setupNotice .box{
-    background:var(--panel); border:1px solid var(--gold-dim); border-radius:4px; padding:28px;
-  }
+  #setupNotice{ max-width:640px; margin:8vh auto; padding:0 20px; }
+  #setupNotice .box{ background:var(--panel); border:1px solid var(--gold-dim); border-radius:4px; padding:28px; }
   #setupNotice h1{ font-family:'Cormorant Garamond',serif; font-size:26px; margin-bottom:12px; color:var(--gold); }
-  #setupNotice p{ font-size:14px; line-height:1.6; color:var(--ivory); margin-bottom:10px; }
+  #setupNotice p{ font-size:14px; line-height:1.6; margin-bottom:10px; }
   #setupNotice code{ background:var(--panel-2); padding:2px 6px; border-radius:2px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--gold); }
-
-  /* ---- Login ---- */
-  #loginScreen{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-  }
-  .login-box{
-    width:100%; max-width:380px; background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:32px 28px;
-  }
-  .login-box h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:28px; letter-spacing:0.1em; margin-bottom:4px; }
-  .login-box .sub{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--gold); text-transform:uppercase; margin-bottom:22px; }
-  .login-box .field{ margin-bottom:14px; }
-  .login-box label{ display:block; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-  .login-box input{ width:100%; }
-  .login-error{ color:var(--danger); font-size:12.5px; margin:6px 0 4px; min-height:16px; }
-  .login-toggle{ text-align:center; margin-top:16px; font-size:13px; color:var(--muted); }
-  .login-toggle a{ color:var(--gold); cursor:pointer; text-decoration:underline; }
 
   input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="date"], input[type="url"], select, textarea{
     background:var(--panel-2); border:1px solid var(--border); color:var(--ivory);
@@ -49,14 +29,13 @@
     transition:border-color .15s; width:100%;
   }
   input:focus, select:focus, textarea:focus{ border-color:var(--gold-dim); }
-
   .btn{
     font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.06em; text-transform:uppercase;
     padding:10px 16px; border-radius:2px; border:1px solid var(--gold-dim); background:transparent; color:var(--gold);
     cursor:pointer; transition:background .15s, color .15s; white-space:nowrap;
   }
   .btn:hover{ background:var(--gold-dim); color:var(--ivory); }
-  .btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
   .btn.primary{ background:var(--gold); color:#1a1712; border-color:var(--gold); font-weight:600; }
   .btn.primary:hover{ background:#d6ad6c; }
   .btn.ghost{ border-color:var(--border); color:var(--muted); }
@@ -66,16 +45,73 @@
   .btn.full{ width:100%; text-align:center; }
   .btn[disabled]{ opacity:.5; cursor:default; }
 
-  /* ---- App shell ---- */
+  /* ---- Public storefront ---- */
+  #publicView header{
+    border-bottom:1px solid var(--border); padding:26px 24px; text-align:center;
+    background:linear-gradient(180deg, rgba(195,154,92,0.06), transparent);
+  }
+  #publicView header h1{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:38px; letter-spacing:0.16em; }
+  #publicView header .sub{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; color:var(--gold); text-transform:uppercase; margin-top:6px; }
+  #publicView header .count{ margin-top:10px; font-size:13px; color:var(--muted); }
+
+  #publicMain{ max-width:1200px; margin:0 auto; padding:28px 24px 60px; }
+  #publicGrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:20px; }
+
+  .listing{
+    background:var(--panel); border:1px solid var(--border); border-radius:3px; overflow:hidden; position:relative;
+    animation:rise .45s ease backwards; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .listing:hover{ transform:translateY(-3px); border-color:var(--gold-dim); box-shadow:0 12px 26px rgba(0,0,0,0.35); }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  .lot-tag{
+    position:absolute; top:10px; left:10px; z-index:2; width:46px; height:46px; border-radius:50%;
+    border:1px solid var(--gold-dim); background:rgba(23,22,26,0.85); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; color:var(--gold); line-height:1;
+  }
+  .lot-tag .l{ font-size:7px; letter-spacing:0.08em; opacity:.8; }
+  .lot-tag .n{ font-size:13px; font-weight:500; }
+
+  .listing .photo{ width:100%; aspect-ratio:1/1; background:var(--panel-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; overflow:hidden; }
+  .listing .photo img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .listing .info{ padding:16px 16px 18px; }
+  .listing .brand-name{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:22px; }
+  .listing .model{ font-size:13px; color:var(--muted); margin-top:1px; }
+  .listing .specs{ margin-top:10px; display:flex; flex-direction:column; gap:3px; }
+  .listing .specs .spec{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--gold-dim); }
+  .listing .price-row{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+  .listing .price{ font-family:'IBM Plex Mono',monospace; color:var(--gold); font-size:17px; font-weight:500; }
+  .listing .contact-btn{ font-size:11px; padding:8px 12px; }
+
+  #publicEmpty{ text-align:center; padding:100px 20px; color:var(--muted); font-family:'Cormorant Garamond',serif; font-size:20px; }
+  #publicEmpty .hint{ font-family:'Inter',sans-serif; font-size:13px; margin-top:8px; opacity:.8; }
+
+  footer{ text-align:center; padding:30px 20px 40px; }
+  footer a{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.08em; color:var(--muted); text-decoration:none; text-transform:uppercase; }
+  footer a:hover{ color:var(--gold); }
+
+  /* ---- Admin: login ---- */
+  #loginScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login-box{ width:100%; max-width:380px; background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:32px 28px; }
+  .login-box h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:28px; letter-spacing:0.1em; margin-bottom:4px; }
+  .login-box .sub{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--gold); text-transform:uppercase; margin-bottom:22px; }
+  .login-box .field{ margin-bottom:14px; }
+  .login-box label{ display:block; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .login-error{ color:var(--danger); font-size:12.5px; margin:6px 0 4px; min-height:16px; }
+  .login-toggle{ text-align:center; margin-top:16px; font-size:13px; color:var(--muted); }
+  .login-toggle a{ cursor:pointer; text-decoration:underline; }
+  .back-link{ display:block; text-align:center; margin-top:14px; font-size:12px; color:var(--muted); text-decoration:none; }
+
+  /* ---- Admin: app shell ---- */
   #app{ display:none; }
-  header{
+  #app header{
     border-bottom:1px solid var(--border); padding:18px 24px; display:flex; align-items:center;
     justify-content:space-between; flex-wrap:wrap; gap:14px; position:sticky; top:0;
-    background:rgba(23,22,26,0.92); backdrop-filter:blur(6px); z-index:20;
+    background:rgba(23,22,26,0.92); backdrop-filter:blur(6px); z-index:20; text-align:left;
   }
-  .brand{ display:flex; flex-direction:column; gap:2px; }
-  .brand h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:26px; letter-spacing:0.14em; }
-  .brand .sub{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--gold); text-transform:uppercase; }
+  #app .brand{ display:flex; flex-direction:column; gap:2px; }
+  #app .brand h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:26px; letter-spacing:0.14em; }
+  #app .brand .sub{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:var(--gold); text-transform:uppercase; }
   .header-right{ display:flex; align-items:center; gap:18px; }
   .tally{ text-align:right; font-family:'IBM Plex Mono',monospace; }
   .tally .label{ font-size:10px; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; }
@@ -93,16 +129,11 @@
     cursor:pointer; animation:rise .4s ease backwards; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
   }
   .card:hover{ transform:translateY(-3px); border-color:var(--gold-dim); box-shadow:0 10px 24px rgba(0,0,0,0.35); }
-  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
-
-  .lot-tag{
-    position:absolute; top:10px; left:10px; z-index:2; width:44px; height:44px; border-radius:50%;
-    border:1px solid var(--gold-dim); background:rgba(23,22,26,0.85); display:flex; flex-direction:column;
-    align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; color:var(--gold); line-height:1;
+  .card .for-sale-badge{
+    position:absolute; top:10px; right:10px; z-index:2; background:var(--gold); color:#1a1712;
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase;
+    padding:4px 8px; border-radius:2px; font-weight:600;
   }
-  .lot-tag .l{ font-size:7px; letter-spacing:0.08em; opacity:.8; }
-  .lot-tag .n{ font-size:13px; font-weight:500; }
-
   .card .photo{ width:100%; aspect-ratio:1/1; background:var(--panel-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; overflow:hidden; }
   .card .photo img{ width:100%; height:100%; object-fit:cover; display:block; }
   .card .info{ padding:14px 14px 16px; }
@@ -114,7 +145,7 @@
   .card .est-value{ font-family:'IBM Plex Mono',monospace; color:var(--gold); font-size:14px; }
 
   #empty{ text-align:center; padding:80px 20px; color:var(--muted); font-family:'Cormorant Garamond',serif; font-size:20px; }
-  #empty .hint{ font-family:'Inter',sans-serif; font-size:13px; margin-top:8px; color:var(--muted); opacity:.8; }
+  #empty .hint{ font-family:'Inter',sans-serif; font-size:13px; margin-top:8px; opacity:.8; }
 
   .overlay{ position:fixed; inset:0; background:rgba(10,9,11,0.72); display:none; align-items:flex-start; justify-content:center; padding:5vh 16px; z-index:100; overflow-y:auto; }
   .overlay.open{ display:flex; }
@@ -126,6 +157,13 @@
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   textarea{ resize:vertical; min-height:60px; font-family:'Inter',sans-serif; }
   .field-hint{ font-size:11.5px; color:var(--muted); margin-top:5px; }
+
+  .forsale-toggle{
+    display:flex; align-items:center; gap:10px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:3px; padding:12px 14px; margin-bottom:16px;
+  }
+  .forsale-toggle input{ width:auto; }
+  .forsale-toggle label{ font-size:13px; color:var(--ivory); cursor:pointer; margin:0; text-transform:none; letter-spacing:0; font-family:'Inter',sans-serif; }
 
   .photo-drop{ border:1px dashed var(--border); border-radius:3px; padding:14px; text-align:center; color:var(--muted); font-size:12.5px; cursor:pointer; position:relative; transition:border-color .15s; }
   .photo-drop:hover{ border-color:var(--gold-dim); }
@@ -151,70 +189,70 @@
   @media (max-width:520px){
     .detail-grid{ grid-template-columns:1fr; }
     .row2{ grid-template-columns:1fr; }
-    header{ padding:14px 16px; }
+    #app header{ padding:14px 16px; }
     main{ padding:16px; }
+    #publicView header h1{ font-size:28px; }
   }
   @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
 
-<!-- Shown if firebaseConfig hasn't been filled in yet -->
 <div id="setupNotice" style="display:none;">
   <div class="box">
     <h1>Einrichtung nötig</h1>
-    <p>Diese Datei ist noch nicht mit deinem Firebase-Projekt verbunden. Öffne die Datei in einem Editor, suche den Abschnitt <code>firebaseConfig</code> im <code>&lt;script&gt;</code>-Bereich und trage dort deine eigenen Werte aus der Firebase-Konsole ein (Projekteinstellungen → Allgemein → "Meine Apps" → Web-App).</p>
-    <p>Aktiviere außerdem in der Firebase-Konsole unter <strong>Authentication → Sign-in method</strong> den Anbieter <strong>E-Mail/Passwort</strong>, und lege unter <strong>Firestore Database</strong> eine Datenbank an. Details stehen in der beiliegenden README.</p>
+    <p>Diese Datei ist noch nicht mit deinem Firebase-Projekt verbunden. Öffne die Datei in einem Editor, suche den Abschnitt <code>firebaseConfig</code> im <code>&lt;script&gt;</code>-Bereich und trage dort deine eigenen Werte ein. Details stehen in der README.</p>
   </div>
 </div>
 
-<!-- Login -->
+<!-- ============ PUBLIC STOREFRONT ============ -->
+<div id="publicView">
+  <header>
+    <h1>PROVENANCE</h1>
+    <div class="sub">Ausgewählte Uhren zum Verkauf</div>
+    <div class="count" id="publicCount"></div>
+  </header>
+  <main id="publicMain">
+    <div id="publicLoading" style="text-align:center; padding:60px; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px;">Lade Angebote…</div>
+    <div id="publicGrid" style="display:none;"></div>
+    <div id="publicEmpty" style="display:none;">
+      Derzeit sind keine Uhren gelistet.
+      <div class="hint">Schau bald wieder vorbei.</div>
+    </div>
+  </main>
+  <footer><a href="#admin">Verwaltung</a></footer>
+</div>
+
+<!-- ============ ADMIN: LOGIN ============ -->
 <div id="loginScreen" style="display:none;">
   <div class="login-box">
     <h1>PROVENANCE</h1>
-    <div class="sub">Privates Uhrenarchiv</div>
+    <div class="sub">Verwaltung · Privates Archiv</div>
     <form id="loginForm">
-      <div class="field">
-        <label>E-Mail</label>
-        <input type="email" id="authEmail" required autocomplete="email">
-      </div>
-      <div class="field">
-        <label>Passwort</label>
-        <input type="password" id="authPassword" required autocomplete="current-password" minlength="6">
-      </div>
+      <div class="field"><label>E-Mail</label><input type="email" id="authEmail" required autocomplete="email"></div>
+      <div class="field"><label>Passwort</label><input type="password" id="authPassword" required autocomplete="current-password" minlength="6"></div>
       <div class="login-error" id="authError"></div>
       <button type="submit" class="btn primary full" id="authSubmitBtn">Anmelden</button>
     </form>
-    <div class="login-toggle">
-      <span id="toggleText">Noch kein Konto?</span> <a id="toggleModeLink">Konto erstellen</a>
-    </div>
+    <div class="login-toggle"><span id="toggleText">Noch kein Konto?</span> <a id="toggleModeLink">Konto erstellen</a></div>
+    <a href="#" id="backToPublic" class="back-link">← Zurück zur Verkaufsseite</a>
   </div>
 </div>
 
-<!-- App -->
+<!-- ============ ADMIN: ARCHIVE ============ -->
 <div id="app">
   <header>
-    <div class="brand">
-      <h1>PROVENANCE</h1>
-      <div class="sub">Privates Uhrenarchiv · Verkaufsvorbereitung</div>
-    </div>
+    <div class="brand"><h1>PROVENANCE</h1><div class="sub">Privates Archiv · Verwaltung</div></div>
     <div class="header-right">
-      <div class="tally">
-        <div class="label">Geschätzter Gesamtwert</div>
-        <div class="value" id="totalValue">—</div>
-      </div>
-      <div class="user-chip">
-        <span id="userEmail"></span>
-        <button class="btn ghost" id="logoutBtn">Abmelden</button>
-      </div>
+      <div class="tally"><div class="label">Geschätzter Gesamtwert (privat)</div><div class="value" id="totalValue">—</div></div>
+      <div class="user-chip"><span id="userEmail"></span><button class="btn ghost" id="logoutBtn">Abmelden</button></div>
     </div>
   </header>
-
   <div class="toolbar">
     <input type="text" id="searchInput" placeholder="Suche nach Marke, Modell oder Referenz…">
+    <a href="#" class="btn ghost" id="viewPublicLink">Verkaufsseite ansehen</a>
     <button class="btn primary" id="addBtn">+ Uhr erfassen</button>
   </div>
-
   <main>
     <div id="loading" style="text-align:center; padding:60px; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px;">Lade Archiv…</div>
     <div id="grid" style="display:none;"></div>
@@ -230,13 +268,17 @@
   <div class="modal">
     <h2 id="formTitle">Uhr erfassen</h2>
     <form id="watchForm">
+      <div class="forsale-toggle">
+        <input type="checkbox" id="fForSale">
+        <label for="fForSale">Zum Verkauf anbieten (öffentlich auf der Verkaufsseite sichtbar)</label>
+      </div>
       <div class="field">
         <label>Foto (wird komprimiert gespeichert)</label>
         <div class="photo-drop" id="photoDrop">
           <span id="photoDropText">Klicken, um ein Foto auszuwählen</span>
           <input type="file" id="photoInput" accept="image/*">
         </div>
-        <div class="photo-warn" id="photoWarn">Foto ist auch komprimiert zu groß für Firestore (max. ~700 KB). Bitte ein kleineres Bild wählen oder unten einen Cloudinary-Link eintragen.</div>
+        <div class="photo-warn" id="photoWarn">Foto ist auch komprimiert zu groß (max. ~700 KB). Bitte ein kleineres Bild wählen oder unten einen Cloudinary-Link eintragen.</div>
       </div>
       <div class="field">
         <label>Cloudinary-Bild-URL (optional, hat Vorrang vor dem Foto oben)</label>
@@ -251,13 +293,8 @@
         <div class="field"><label>Seriennummer</label><input type="text" id="fSerial" placeholder="z. B. R8K12345"></div>
       </div>
       <div class="row2">
-        <div class="field"><label>Kaufpreis (€)</label><input type="number" id="fPurchasePrice" min="0" step="0.01"></div>
-        <div class="field"><label>Geschätzter Wert (€)</label><input type="number" id="fEstValue" min="0" step="0.01"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label>Kaufdatum</label><input type="date" id="fPurchaseDate"></div>
-        <div class="field">
-          <label>Zustand</label>
+        <div class="field"><label>Kaliber / Werk</label><input type="text" id="fCaliber" placeholder="z. B. Cal. 3235"></div>
+        <div class="field"><label>Zustand</label>
           <select id="fCondition">
             <option value="Neu">Neu</option>
             <option value="Ungetragen">Ungetragen</option>
@@ -268,8 +305,16 @@
           </select>
         </div>
       </div>
+      <div class="row2">
+        <div class="field"><label>Verkaufspreis (€) — öffentlich</label><input type="number" id="fAskingPrice" min="0" step="0.01"></div>
+        <div class="field"><label>Geschätzter Wert (€) — privat</label><input type="number" id="fEstValue" min="0" step="0.01"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Kaufpreis (€) — privat</label><input type="number" id="fPurchasePrice" min="0" step="0.01"></div>
+        <div class="field"><label>Kaufdatum — privat</label><input type="date" id="fPurchaseDate"></div>
+      </div>
       <div class="field">
-        <label>Box &amp; Papiere</label>
+        <label>Box &amp; Papiere — privat</label>
         <select id="fBoxPapers">
           <option value="Vollständig (Box &amp; Papiere)">Vollständig (Box &amp; Papiere)</option>
           <option value="Nur Box">Nur Box</option>
@@ -278,7 +323,7 @@
         </select>
       </div>
       <div class="field">
-        <label>Notizen (Herkunft, Service-Historie, Besonderheiten)</label>
+        <label>Notizen — privat (Herkunft, Service-Historie, Besonderheiten)</label>
         <textarea id="fNotes" placeholder="z. B. Gekauft bei … , letzter Service …, Box unbeschädigt …"></textarea>
       </div>
       <div class="modal-actions">
@@ -293,9 +338,7 @@
 </div>
 
 <!-- Detail Modal -->
-<div class="overlay" id="detailOverlay">
-  <div class="modal" id="detailModal"></div>
-</div>
+<div class="overlay" id="detailOverlay"><div class="modal" id="detailModal"></div></div>
 
 <div class="toast" id="toast"></div>
 
@@ -306,7 +349,7 @@ import {
   createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, getDocs, query, orderBy
+  getFirestore, collection, doc, setDoc, deleteDoc, getDocs, getDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // ============================================================
@@ -314,13 +357,15 @@ import {
 // (Firebase-Konsole → Projekteinstellungen → Meine Apps → Web-App → SDK-Setup)
 // ============================================================
 const firebaseConfig = {
-  apiKey: "DEIN_API_KEY",
-  authDomain: "DEIN_PROJEKT.firebaseapp.com",
-  projectId: "DEIN_PROJEKT_ID",
-  storageBucket: "DEIN_PROJEKT.appspot.com",
-  messagingSenderId: "DEINE_SENDER_ID",
-  appId: "DEINE_APP_ID"
+  apiKey: "AIzaSyDTHDbwv8RMXTl7OZjpF3BwqJkFJWkRnoU",
+  authDomain: "omega-c08c9.firebaseapp.com",
+  projectId: "omega-c08c9",
+  storageBucket: "omega-c08c9.firebasestorage.app",
+  messagingSenderId: "240410192860",
+  appId: "1:240410192860:web:c27c5d17ebc17266cb3d19"
 };
+// Kontakt-E-Mail für Kaufinteressenten (mailto-Link auf der Verkaufsseite)
+const CONTACT_EMAIL = "marcokkirchi@web.de";
 // ============================================================
 
 const isConfigured = !Object.values(firebaseConfig).some(v => String(v).startsWith("DEIN"));
@@ -336,21 +381,8 @@ function runApp(){
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const MAX_BASE64_LEN = 700000; // ~ under Firestore's 1 MiB document limit, room left for other fields
-
-  let collectionData = [];
-  let currentPhotoData = null;
-  let editingId = null;
-  let currentUid = null;
-
+  const MAX_BASE64_LEN = 700000;
   const el = id => document.getElementById(id);
-  const loginScreen = el('loginScreen');
-  const appEl = el('app');
-  const grid = el('grid');
-  const loadingEl = el('loading');
-  const emptyEl = el('empty');
-  const totalValueEl = el('totalValue');
-  const searchInput = el('searchInput');
 
   function toast(msg, isError){
     const t = el('toast');
@@ -369,7 +401,88 @@ function runApp(){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ---- Auth ----
+  // ============ ROUTING ============
+  const publicView = el('publicView');
+  const loginScreen = el('loginScreen');
+  const appEl = el('app');
+
+  function route(){
+    const isAdmin = location.hash === '#admin';
+    if(!isAdmin){
+      publicView.style.display = 'block';
+      loginScreen.style.display = 'none';
+      appEl.style.display = 'none';
+      loadPublicListings();
+    } else {
+      publicView.style.display = 'none';
+      if(auth.currentUser){
+        loginScreen.style.display = 'none';
+        appEl.style.display = 'block';
+      } else {
+        loginScreen.style.display = 'flex';
+        appEl.style.display = 'none';
+      }
+    }
+  }
+  window.addEventListener('hashchange', route);
+  el('backToPublic').addEventListener('click', (e) => { e.preventDefault(); location.hash = ''; });
+  el('viewPublicLink').addEventListener('click', (e) => { e.preventDefault(); location.hash = ''; });
+
+  // ============ PUBLIC STOREFRONT ============
+  async function loadPublicListings(){
+    const loadingEl = el('publicLoading');
+    const grid = el('publicGrid');
+    const emptyEl = el('publicEmpty');
+    loadingEl.style.display = 'block';
+    grid.style.display = 'none';
+    emptyEl.style.display = 'none';
+    let listings = [];
+    try{
+      const q = query(collection(db, 'public_listings'), orderBy('createdAt', 'asc'));
+      const snap = await getDocs(q);
+      listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }catch(e){
+      toast('Angebote konnten nicht geladen werden.', true);
+    }
+    loadingEl.style.display = 'none';
+    el('publicCount').textContent = listings.length > 0 ? `${listings.length} Uhr${listings.length===1?'':'en'} aktuell im Angebot` : '';
+
+    if(listings.length === 0){
+      emptyEl.style.display = 'block';
+      return;
+    }
+    grid.style.display = 'grid';
+    grid.innerHTML = '';
+    listings.forEach((w, i) => {
+      const lotNum = String(i + 1).padStart(3, '0');
+      const imgSrc = w.cloudinaryUrl || w.photo || null;
+      const subject = encodeURIComponent(`Anfrage: ${w.brand} ${w.model} (LOT ${lotNum})`);
+      const body = encodeURIComponent(`Hallo,\n\nich interessiere mich für die ${w.brand} ${w.model} (Ref. ${w.ref||'-'}) für ${fmtMoney(w.askingPrice)}.\n\nViele Grüße`);
+      const card = document.createElement('div');
+      card.className = 'listing';
+      card.style.animationDelay = (i * 0.04) + 's';
+      card.innerHTML = `
+        <div class="lot-tag"><span class="l">LOT</span><span class="n">${lotNum}</span></div>
+        <div class="photo">${imgSrc ? `<img src="${imgSrc}" alt="${escapeHtml(w.brand)} ${escapeHtml(w.model)}">` : 'Kein Foto'}</div>
+        <div class="info">
+          <div class="brand-name">${escapeHtml(w.brand)}</div>
+          <div class="model">${escapeHtml(w.model)}</div>
+          <div class="specs">
+            ${w.ref ? `<div class="spec">REF ${escapeHtml(w.ref)}</div>` : ''}
+            ${w.serial ? `<div class="spec">S/N ${escapeHtml(w.serial)}</div>` : ''}
+            ${w.caliber ? `<div class="spec">${escapeHtml(w.caliber)}</div>` : ''}
+            ${w.condition ? `<div class="spec">${escapeHtml(w.condition)}</div>` : ''}
+          </div>
+          <div class="price-row">
+            <span class="price">${fmtMoney(w.askingPrice)}</span>
+            <a class="btn primary contact-btn" href="mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}">Anfrage senden</a>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  // ============ AUTH ============
   let authMode = 'login';
   const authError = el('authError');
   const toggleModeLink = el('toggleModeLink');
@@ -391,11 +504,8 @@ function runApp(){
     const email = el('authEmail').value.trim();
     const password = el('authPassword').value;
     try{
-      if(authMode === 'login'){
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-      }
+      if(authMode === 'login') await signInWithEmailAndPassword(auth, email, password);
+      else await createUserWithEmailAndPassword(auth, email, password);
     }catch(err){
       authError.textContent = translateAuthError(err.code);
     }
@@ -416,22 +526,34 @@ function runApp(){
 
   el('logoutBtn').addEventListener('click', () => signOut(auth));
 
+  let currentUid = null;
+  let collectionData = [];
+  let currentPhotoData = null;
+  let editingId = null;
+
   onAuthStateChanged(auth, (user) => {
-    if(user){
-      currentUid = user.uid;
-      el('userEmail').textContent = user.email;
-      loginScreen.style.display = 'none';
-      appEl.style.display = 'block';
-      el('loginForm').reset();
-      loadCollection();
-    } else {
-      currentUid = null;
-      appEl.style.display = 'none';
-      loginScreen.style.display = 'flex';
+    currentUid = user ? user.uid : null;
+    if(user) el('userEmail').textContent = user.email;
+    if(location.hash === '#admin'){
+      if(user){
+        loginScreen.style.display = 'none';
+        appEl.style.display = 'block';
+        el('loginForm').reset();
+        loadCollection();
+      } else {
+        appEl.style.display = 'none';
+        loginScreen.style.display = 'flex';
+      }
     }
   });
 
-  // ---- Firestore data ----
+  // ============ ADMIN: DATA ============
+  const grid = el('grid');
+  const loadingEl = el('loading');
+  const emptyEl = el('empty');
+  const totalValueEl = el('totalValue');
+  const searchInput = el('searchInput');
+
   async function loadCollection(){
     loadingEl.style.display = 'block';
     grid.style.display = 'none';
@@ -448,11 +570,38 @@ function runApp(){
     render();
   }
 
+  function maskSerial(serial){
+    const s = (serial || '').trim();
+    if(!s) return '';
+    if(s.length <= 4) return '•'.repeat(Math.max(0, s.length - 1)) + s.slice(-1);
+    return '•'.repeat(s.length - 4) + s.slice(-4);
+  }
+
+  function publicSubset(w){
+    return {
+      brand: w.brand, model: w.model, ref: w.ref || '', serial: maskSerial(w.serial),
+      caliber: w.caliber || '', condition: w.condition || '', askingPrice: w.askingPrice ?? null,
+      photo: w.photo || null, cloudinaryUrl: w.cloudinaryUrl || '',
+      ownerId: currentUid, createdAt: w.createdAt,
+    };
+  }
+
+  async function syncPublicListing(w){
+    const ref = doc(db, 'public_listings', w.id);
+    if(w.forSale){
+      await setDoc(ref, publicSubset(w));
+    } else {
+      try{ await deleteDoc(ref); }catch(e){ /* may not exist */ }
+    }
+  }
+
   async function saveWatchDoc(watch){
     await setDoc(doc(db, 'users', currentUid, 'watches', watch.id), watch);
+    await syncPublicListing(watch);
   }
   async function deleteWatchDoc(id){
     await deleteDoc(doc(db, 'users', currentUid, 'watches', id));
+    try{ await deleteDoc(doc(db, 'public_listings', id)); }catch(e){}
   }
 
   function computeTotal(){
@@ -488,19 +637,20 @@ function runApp(){
       card.style.animationDelay = (i * 0.03) + 's';
       card.innerHTML = `
         <div class="lot-tag"><span class="l">LOT</span><span class="n">${lotNum}</span></div>
+        ${w.forSale ? '<div class="for-sale-badge">Zum Verkauf</div>' : ''}
         <div class="photo">${imgSrc ? `<img src="${imgSrc}" alt="">` : 'Kein Foto'}</div>
         <div class="info">
           <div class="brand-name">${escapeHtml(w.brand)}</div>
           <div class="model">${escapeHtml(w.model)}</div>
           <div class="ref">${w.ref ? 'REF ' + escapeHtml(w.ref) : ''}</div>
-          <div class="value-row"><span class="est-label">Schätzwert</span><span class="est-value">${fmtMoney(w.estValue)}</span></div>
+          <div class="value-row"><span class="est-label">Geschätzter Wert</span><span class="est-value">${fmtMoney(w.estValue)}</span></div>
         </div>`;
       card.addEventListener('click', () => openDetail(w.id));
       grid.appendChild(card);
     });
   }
 
-  // ---- Form modal ----
+  // ============ ADMIN: FORM ============
   const formOverlay = el('formOverlay');
   const watchForm = el('watchForm');
   const formTitle = el('formTitle');
@@ -514,11 +664,14 @@ function runApp(){
     currentPhotoData = watch ? (watch.photo || null) : null;
     photoWarn.style.display = 'none';
 
+    el('fForSale').checked = watch ? !!watch.forSale : false;
     el('fCloudinaryUrl').value = watch ? (watch.cloudinaryUrl||'') : '';
     el('fBrand').value = watch ? watch.brand : '';
     el('fModel').value = watch ? watch.model : '';
     el('fRef').value = watch ? (watch.ref||'') : '';
     el('fSerial').value = watch ? (watch.serial||'') : '';
+    el('fCaliber').value = watch ? (watch.caliber||'') : '';
+    el('fAskingPrice').value = watch ? (watch.askingPrice ?? '') : '';
     el('fPurchasePrice').value = watch ? (watch.purchasePrice ?? '') : '';
     el('fEstValue').value = watch ? (watch.estValue ?? '') : '';
     el('fPurchaseDate').value = watch ? (watch.purchaseDate||'') : '';
@@ -603,10 +756,13 @@ function runApp(){
     saveBtn.disabled = true;
     const data = {
       id: editingId || genId(),
+      forSale: el('fForSale').checked,
       brand: el('fBrand').value.trim(),
       model: el('fModel').value.trim(),
       ref: el('fRef').value.trim(),
       serial: el('fSerial').value.trim(),
+      caliber: el('fCaliber').value.trim(),
+      askingPrice: el('fAskingPrice').value ? Number(el('fAskingPrice').value) : null,
       purchasePrice: el('fPurchasePrice').value ? Number(el('fPurchasePrice').value) : null,
       estValue: el('fEstValue').value ? Number(el('fEstValue').value) : null,
       purchaseDate: el('fPurchaseDate').value,
@@ -644,7 +800,7 @@ function runApp(){
     }
   });
 
-  // ---- Detail modal ----
+  // ============ ADMIN: DETAIL ============
   const detailOverlay = el('detailOverlay');
   const detailModal = el('detailModal');
 
@@ -654,21 +810,23 @@ function runApp(){
     const lotNum = String(collectionData.findIndex(c => c.id === id) + 1).padStart(3, '0');
     const imgSrc = w.cloudinaryUrl || w.photo || null;
     detailModal.innerHTML = `
-      <h2>LOT ${lotNum} · ${escapeHtml(w.brand)}</h2>
+      <h2>LOT ${lotNum} · ${escapeHtml(w.brand)} ${w.forSale ? '· <span style="color:var(--gold); font-size:14px;">Zum Verkauf</span>' : ''}</h2>
       <div class="detail-grid">
         <div class="dphoto">${imgSrc ? `<img src="${imgSrc}" alt="">` : 'Kein Foto'}</div>
         <div class="dl">
           <div><div class="dt">Modell</div><div class="dd">${escapeHtml(w.model)}</div></div>
           <div><div class="dt">Referenz</div><div class="dd">${escapeHtml(w.ref)||'—'}</div></div>
           <div><div class="dt">Seriennummer</div><div class="dd">${escapeHtml(w.serial)||'—'}</div></div>
+          <div><div class="dt">Kaliber</div><div class="dd">${escapeHtml(w.caliber)||'—'}</div></div>
           <div><div class="dt">Zustand</div><div class="dd">${escapeHtml(w.condition)||'—'}</div></div>
-          <div><div class="dt">Kaufpreis</div><div class="dd">${fmtMoney(w.purchasePrice)}</div></div>
-          <div><div class="dt">Schätzwert</div><div class="dd">${fmtMoney(w.estValue)}</div></div>
+          <div><div class="dt">Verkaufspreis</div><div class="dd">${fmtMoney(w.askingPrice)}</div></div>
+          <div><div class="dt">Kaufpreis (privat)</div><div class="dd">${fmtMoney(w.purchasePrice)}</div></div>
+          <div><div class="dt">Geschätzter Wert (privat)</div><div class="dd">${fmtMoney(w.estValue)}</div></div>
           <div><div class="dt">Kaufdatum</div><div class="dd">${w.purchaseDate||'—'}</div></div>
           <div><div class="dt">Box &amp; Papiere</div><div class="dd">${escapeHtml(w.boxPapers)||'—'}</div></div>
         </div>
       </div>
-      ${w.notes ? `<div class="dt" style="margin-bottom:6px;">Notizen</div><div class="notes-box">${escapeHtml(w.notes)}</div>` : ''}
+      ${w.notes ? `<div class="dt" style="margin-bottom:6px;">Notizen (privat)</div><div class="notes-box">${escapeHtml(w.notes)}</div>` : ''}
       <div class="modal-actions">
         <div></div>
         <div class="right">
@@ -683,6 +841,8 @@ function runApp(){
   detailOverlay.addEventListener('click', (e) => { if(e.target === detailOverlay) detailOverlay.classList.remove('open'); });
 
   searchInput.addEventListener('input', render);
+
+  route();
 }
 </script>
 </body>
