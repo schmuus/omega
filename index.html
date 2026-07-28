@@ -349,7 +349,7 @@ import {
   createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, setDoc, deleteDoc, getDocs, getDoc, query, orderBy
+  initializeFirestore, collection, doc, setDoc, deleteDoc, getDocs, getDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // ============================================================
@@ -365,7 +365,7 @@ const firebaseConfig = {
   appId: "1:240410192860:web:c27c5d17ebc17266cb3d19"
 };
 // Kontakt-E-Mail für Kaufinteressenten (mailto-Link auf der Verkaufsseite)
-const CONTACT_EMAIL = "marcokkirchi@web.de";
+const CONTACT_EMAIL = "DEINE@EMAIL.DE";
 // ============================================================
 
 const isConfigured = !Object.values(firebaseConfig).some(v => String(v).startsWith("DEIN"));
@@ -379,7 +379,9 @@ if(!isConfigured){
 function runApp(){
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getFirestore(app);
+  // experimentalAutoDetectLongPolling: verhindert, dass Speichern/Laden bei manchen
+  // Browsern/Ad-Blockern/Firmennetzwerken lautlos hängen bleibt (bekanntes Firestore-Problem)
+  const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
 
   const MAX_BASE64_LEN = 700000;
   const el = id => document.getElementById(id);
@@ -396,6 +398,14 @@ function runApp(){
     return new Intl.NumberFormat('de-DE', {style:'currency', currency:'EUR', maximumFractionDigits:0}).format(n);
   }
   function genId(){ return 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function withTimeout(promise, ms, label){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(
+        `Zeitüberschreitung bei "${label}" – prüfe, ob die Firestore-Datenbank angelegt ist, und deaktiviere testweise Ad-/Trackingblocker.`
+      )), ms))
+    ]);
+  }
   function escapeHtml(s){
     if(s === undefined || s === null) return '';
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -774,7 +784,7 @@ function runApp(){
       createdAt: editingId ? (collectionData.find(w=>w.id===editingId)?.createdAt || Date.now()) : Date.now(),
     };
     try{
-      await saveWatchDoc(data);
+      await withTimeout(saveWatchDoc(data), 15000, 'Speichern');
       const idx = collectionData.findIndex(w => w.id === data.id);
       if(idx > -1) collectionData[idx] = data; else collectionData.push(data);
       closeForm();
