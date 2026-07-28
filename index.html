@@ -397,7 +397,7 @@ function runApp(){
   const el = id => document.getElementById(id);
 
   const footerContactText = el('footerContactText');
-  footerContactText.textContent = `Kontakt: ${CONTACT_EMAIL}`;
+  footerContactText.textContent = CONTACT_EMAIL;
 
   function toast(msg, isError){
     const t = el('toast');
