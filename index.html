@@ -223,6 +223,14 @@
   <footer><a href="#admin">Verwaltung</a></footer>
 </div>
 
+<!-- Lightbox: vergrößerte Fotoansicht auf der Verkaufsseite -->
+<div class="overlay" id="lightboxOverlay" style="padding:4vh 16px; align-items:center;">
+  <div style="max-width:min(90vw,900px); width:100%; text-align:center;">
+    <img id="lightboxImg" src="" alt="" style="max-width:100%; max-height:82vh; border-radius:3px; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+    <button type="button" class="btn ghost" id="lightboxClose" style="margin-top:16px;">Schließen</button>
+  </div>
+</div>
+
 <!-- ============ ADMIN: LOGIN ============ -->
 <div id="loginScreen" style="display:none;">
   <div class="login-box">
@@ -293,7 +301,10 @@
         <div class="field"><label>Seriennummer</label><input type="text" id="fSerial" placeholder="z. B. R8K12345"></div>
       </div>
       <div class="row2">
+        <div class="field"><label>Baujahr — öffentlich</label><input type="text" id="fYear" placeholder="z. B. 1998 oder ca. 1995"></div>
         <div class="field"><label>Kaliber / Werk</label><input type="text" id="fCaliber" placeholder="z. B. Cal. 3235"></div>
+      </div>
+      <div class="row2">
         <div class="field"><label>Zustand</label>
           <select id="fCondition">
             <option value="Neu">Neu</option>
@@ -304,14 +315,11 @@
             <option value="Überholungsbedürftig">Überholungsbedürftig</option>
           </select>
         </div>
-      </div>
-      <div class="row2">
         <div class="field"><label>Verkaufspreis (€) — öffentlich</label><input type="number" id="fAskingPrice" min="0" step="0.01"></div>
-        <div class="field"><label>Geschätzter Wert (€) — privat</label><input type="number" id="fEstValue" min="0" step="0.01"></div>
       </div>
-      <div class="row2">
-        <div class="field"><label>Kaufpreis (€) — privat</label><input type="number" id="fPurchasePrice" min="0" step="0.01"></div>
-        <div class="field"><label>Kaufdatum — privat</label><input type="date" id="fPurchaseDate"></div>
+      <div class="field">
+        <label>Geschätzter Wert (€) — privat</label>
+        <input type="number" id="fEstValue" min="0" step="0.01">
       </div>
       <div class="field">
         <label>Box &amp; Papiere — privat</label>
@@ -475,13 +483,14 @@ function runApp(){
       card.style.animationDelay = (i * 0.04) + 's';
       card.innerHTML = `
         <div class="lot-tag"><span class="l">LOT</span><span class="n">${lotNum}</span></div>
-        <div class="photo">${imgSrc ? `<img src="${imgSrc}" alt="${escapeHtml(w.brand)} ${escapeHtml(w.model)}">` : 'Kein Foto'}</div>
+        <div class="photo" style="${imgSrc ? 'cursor:zoom-in;' : ''}">${imgSrc ? `<img src="${imgSrc}" alt="${escapeHtml(w.brand)} ${escapeHtml(w.model)}">` : 'Kein Foto'}</div>
         <div class="info">
           <div class="brand-name">${escapeHtml(w.brand)}</div>
           <div class="model">${escapeHtml(w.model)}</div>
           <div class="specs">
             ${w.ref ? `<div class="spec">REF ${escapeHtml(w.ref)}</div>` : ''}
             ${w.serial ? `<div class="spec">S/N ${escapeHtml(w.serial)}</div>` : ''}
+            ${w.year ? `<div class="spec">Baujahr ${escapeHtml(w.year)}</div>` : ''}
             ${w.caliber ? `<div class="spec">${escapeHtml(w.caliber)}</div>` : ''}
             ${w.condition ? `<div class="spec">${escapeHtml(w.condition)}</div>` : ''}
           </div>
@@ -490,9 +499,25 @@ function runApp(){
             <a class="btn primary contact-btn" href="mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}">Anfrage senden</a>
           </div>
         </div>`;
+      if(imgSrc){
+        card.querySelector('.photo').addEventListener('click', () => openLightbox(imgSrc, `${w.brand} ${w.model}`));
+      }
       grid.appendChild(card);
     });
   }
+
+  function openLightbox(src, alt){
+    el('lightboxImg').src = src;
+    el('lightboxImg').alt = alt;
+    el('lightboxOverlay').classList.add('open');
+  }
+  function closeLightbox(){
+    el('lightboxOverlay').classList.remove('open');
+    el('lightboxImg').src = '';
+  }
+  el('lightboxClose').addEventListener('click', closeLightbox);
+  el('lightboxOverlay').addEventListener('click', (e) => { if(e.target.id === 'lightboxOverlay') closeLightbox(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeLightbox(); });
 
   // ============ AUTH ============
   let authMode = 'login';
@@ -600,7 +625,7 @@ function runApp(){
   function publicSubset(w){
     return {
       brand: w.brand, model: w.model, ref: w.ref || '', serial: maskSerial(w.serial),
-      caliber: w.caliber || '', condition: w.condition || '', askingPrice: w.askingPrice ?? null,
+      caliber: w.caliber || '', year: w.year || '', condition: w.condition || '', askingPrice: w.askingPrice ?? null,
       photo: w.photo || null, cloudinaryUrl: w.cloudinaryUrl || '',
       ownerId: currentUid, createdAt: w.createdAt,
     };
@@ -691,10 +716,9 @@ function runApp(){
     el('fRef').value = watch ? (watch.ref||'') : '';
     el('fSerial').value = watch ? (watch.serial||'') : '';
     el('fCaliber').value = watch ? (watch.caliber||'') : '';
+    el('fYear').value = watch ? (watch.year||'') : '';
     el('fAskingPrice').value = watch ? (watch.askingPrice ?? '') : '';
-    el('fPurchasePrice').value = watch ? (watch.purchasePrice ?? '') : '';
     el('fEstValue').value = watch ? (watch.estValue ?? '') : '';
-    el('fPurchaseDate').value = watch ? (watch.purchaseDate||'') : '';
     el('fCondition').value = watch ? (watch.condition||'Sehr gut') : 'Sehr gut';
     el('fBoxPapers').value = watch ? (watch.boxPapers||'Vollständig (Box & Papiere)') : 'Vollständig (Box & Papiere)';
     el('fNotes').value = watch ? (watch.notes||'') : '';
@@ -782,10 +806,9 @@ function runApp(){
       ref: el('fRef').value.trim(),
       serial: el('fSerial').value.trim(),
       caliber: el('fCaliber').value.trim(),
+      year: el('fYear').value.trim(),
       askingPrice: el('fAskingPrice').value ? Number(el('fAskingPrice').value) : null,
-      purchasePrice: el('fPurchasePrice').value ? Number(el('fPurchasePrice').value) : null,
       estValue: el('fEstValue').value ? Number(el('fEstValue').value) : null,
-      purchaseDate: el('fPurchaseDate').value,
       condition: el('fCondition').value,
       boxPapers: el('fBoxPapers').value,
       notes: el('fNotes').value.trim(),
@@ -806,19 +829,22 @@ function runApp(){
     saveBtn.disabled = false;
   });
 
-  deleteBtn.addEventListener('click', async () => {
-    if(!editingId) return;
+  async function confirmAndDelete(id){
+    if(!id) return;
     if(!confirm('Diese Uhr endgültig aus dem Archiv löschen?')) return;
     try{
-      await deleteWatchDoc(editingId);
-      collectionData = collectionData.filter(w => w.id !== editingId);
+      await deleteWatchDoc(id);
+      collectionData = collectionData.filter(w => w.id !== id);
       closeForm();
+      detailOverlay.classList.remove('open');
       render();
       toast('Uhr gelöscht.');
     }catch(err){
       toast('Löschen fehlgeschlagen.', true);
     }
-  });
+  }
+
+  deleteBtn.addEventListener('click', () => confirmAndDelete(editingId));
 
   // ============ ADMIN: DETAIL ============
   const detailOverlay = el('detailOverlay');
@@ -837,18 +863,17 @@ function runApp(){
           <div><div class="dt">Modell</div><div class="dd">${escapeHtml(w.model)}</div></div>
           <div><div class="dt">Referenz</div><div class="dd">${escapeHtml(w.ref)||'—'}</div></div>
           <div><div class="dt">Seriennummer</div><div class="dd">${escapeHtml(w.serial)||'—'}</div></div>
+          <div><div class="dt">Baujahr</div><div class="dd">${escapeHtml(w.year)||'—'}</div></div>
           <div><div class="dt">Kaliber</div><div class="dd">${escapeHtml(w.caliber)||'—'}</div></div>
           <div><div class="dt">Zustand</div><div class="dd">${escapeHtml(w.condition)||'—'}</div></div>
           <div><div class="dt">Verkaufspreis</div><div class="dd">${fmtMoney(w.askingPrice)}</div></div>
-          <div><div class="dt">Kaufpreis (privat)</div><div class="dd">${fmtMoney(w.purchasePrice)}</div></div>
           <div><div class="dt">Geschätzter Wert (privat)</div><div class="dd">${fmtMoney(w.estValue)}</div></div>
-          <div><div class="dt">Kaufdatum</div><div class="dd">${w.purchaseDate||'—'}</div></div>
           <div><div class="dt">Box &amp; Papiere</div><div class="dd">${escapeHtml(w.boxPapers)||'—'}</div></div>
         </div>
       </div>
       ${w.notes ? `<div class="dt" style="margin-bottom:6px;">Notizen (privat)</div><div class="notes-box">${escapeHtml(w.notes)}</div>` : ''}
       <div class="modal-actions">
-        <div></div>
+        <button type="button" class="btn danger" id="deleteFromDetailBtn">Löschen</button>
         <div class="right">
           <button type="button" class="btn ghost" id="closeDetailBtn">Schließen</button>
           <button type="button" class="btn primary" id="editFromDetailBtn">Bearbeiten</button>
@@ -857,6 +882,7 @@ function runApp(){
     detailOverlay.classList.add('open');
     el('closeDetailBtn').addEventListener('click', () => detailOverlay.classList.remove('open'));
     el('editFromDetailBtn').addEventListener('click', () => { detailOverlay.classList.remove('open'); openForm(w); });
+    el('deleteFromDetailBtn').addEventListener('click', () => confirmAndDelete(w.id));
   }
   detailOverlay.addEventListener('click', (e) => { if(e.target === detailOverlay) detailOverlay.classList.remove('open'); });
 
