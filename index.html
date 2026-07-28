@@ -396,7 +396,7 @@ function runApp(){
   // Browsern/Ad-Blockern/Firmennetzwerken lautlos hängen bleibt (bekanntes Firestore-Problem)
   const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
 
-  const MAX_BASE64_LEN = 700000;
+  const MAX_BASE64_LEN = 900000;
   const el = id => document.getElementById(id);
 
   const footerContactText = el('footerContactText');
@@ -764,22 +764,30 @@ function runApp(){
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
-        compressImage(img, 380, 0.6, (result) => {
-          if(result.length > MAX_BASE64_LEN){
-            compressImage(img, 280, 0.45, (result2) => {
-              if(result2.length > MAX_BASE64_LEN){
-                photoWarn.style.display = 'block';
-                currentPhotoData = null;
-              } else {
-                currentPhotoData = result2;
-                showPhotoPreview(result2);
-              }
-            });
-          } else {
-            currentPhotoData = result;
-            showPhotoPreview(result);
+        // Probiert von bestmöglicher zu niedrigerer Qualität, bis das Ergebnis unters Firestore-Limit passt
+        const steps = [
+          [1000, 0.82],
+          [800, 0.70],
+          [600, 0.60],
+          [400, 0.50],
+        ];
+        tryCompress(0);
+        function tryCompress(i){
+          if(i >= steps.length){
+            photoWarn.style.display = 'block';
+            currentPhotoData = null;
+            return;
           }
-        });
+          const [maxDim, quality] = steps[i];
+          compressImage(img, maxDim, quality, (result) => {
+            if(result.length > MAX_BASE64_LEN){
+              tryCompress(i + 1);
+            } else {
+              currentPhotoData = result;
+              showPhotoPreview(result);
+            }
+          });
+        }
       };
       img.src = ev.target.result;
     };
