@@ -365,7 +365,9 @@ const firebaseConfig = {
   appId: "1:240410192860:web:c27c5d17ebc17266cb3d19"
 };
 // Kontakt-E-Mail für Kaufinteressenten (mailto-Link auf der Verkaufsseite)
-const CONTACT_EMAIL = "DEINE@EMAIL.DE";
+const CONTACT_EMAIL = "marcokkirchi@web.de";
+// Nur diese E-Mail darf sich registrieren (verhindert fremde Konten)
+const ALLOWED_EMAIL = "marcokkirchi@web.de";
 // ============================================================
 
 const isConfigured = !Object.values(firebaseConfig).some(v => String(v).startsWith("DEIN"));
@@ -514,8 +516,16 @@ function runApp(){
     const email = el('authEmail').value.trim();
     const password = el('authPassword').value;
     try{
-      if(authMode === 'login') await signInWithEmailAndPassword(auth, email, password);
-      else await createUserWithEmailAndPassword(auth, email, password);
+      if(authMode === 'login'){
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        if(email.toLowerCase() !== ALLOWED_EMAIL.toLowerCase()){
+          authError.textContent = 'Registrierung ist nicht möglich.';
+          authSubmitBtn.disabled = false;
+          return;
+        }
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
     }catch(err){
       authError.textContent = translateAuthError(err.code);
     }
