@@ -220,7 +220,7 @@
       <div class="hint">Schau bald wieder vorbei.</div>
     </div>
   </main>
-  <footer><a href="#admin">Verwaltung</a> · <a id="footerContactLink" href="#"></a></footer>
+  <footer><a href="#admin">Verwaltung</a><div id="footerContactText" style="margin-top:10px;"></div></footer>
 </div>
 
 <!-- Lightbox: vergrößerte Fotoansicht auf der Verkaufsseite -->
@@ -396,9 +396,8 @@ function runApp(){
   const MAX_BASE64_LEN = 700000;
   const el = id => document.getElementById(id);
 
-  const footerContactLink = el('footerContactLink');
-  footerContactLink.textContent = `Kontakt: ${CONTACT_EMAIL}`;
-  footerContactLink.href = `mailto:${CONTACT_EMAIL}`;
+  const footerContactText = el('footerContactText');
+  footerContactText.textContent = `Kontakt: ${CONTACT_EMAIL}`;
 
   function toast(msg, isError){
     const t = el('toast');
