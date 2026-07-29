@@ -229,7 +229,11 @@
 <!-- Lightbox: vergrößerte Fotoansicht auf der Verkaufsseite -->
 <div class="overlay" id="lightboxOverlay" style="padding:4vh 16px; align-items:center;">
   <div style="max-width:min(90vw,900px); width:100%; text-align:center;">
-    <img id="lightboxImg" src="" alt="" style="max-width:100%; max-height:82vh; border-radius:3px; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+    <div style="position:relative;">
+      <img id="lightboxImg" src="" alt="" style="max-width:100%; max-height:82vh; border-radius:3px; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+      <button type="button" class="btn ghost" id="lightboxPrev" style="display:none; position:absolute; left:8px; top:50%; transform:translateY(-50%);">‹</button>
+      <button type="button" class="btn ghost" id="lightboxNext" style="display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%);">›</button>
+    </div>
     <button type="button" class="btn ghost" id="lightboxClose" style="margin-top:16px;">Schließen</button>
   </div>
 </div>
@@ -262,6 +266,10 @@
   <div class="toolbar">
     <input type="text" id="searchInput" placeholder="Suche nach Marke, Modell oder Referenz…">
     <a href="#" class="btn ghost" id="viewPublicLink">Verkaufsseite ansehen</a>
+    <button class="btn ghost" id="exportJsonBtn">JSON exportieren</button>
+    <button class="btn ghost" id="importJsonBtn">JSON importieren</button>
+    <input type="file" id="importJsonInput" accept="application/json" style="display:none;">
+    <button class="btn ghost" id="exportPdfBtn">PDF exportieren</button>
     <button class="btn primary" id="addBtn">+ Uhr erfassen</button>
   </div>
   <main>
@@ -284,15 +292,23 @@
         <label for="fForSale">Zum Verkauf anbieten (öffentlich auf der Verkaufsseite sichtbar)</label>
       </div>
       <div class="field">
-        <label>Foto (wird komprimiert gespeichert)</label>
+        <label>Foto 1 (wird komprimiert gespeichert)</label>
         <div class="photo-drop" id="photoDrop">
           <span id="photoDropText">Klicken, um ein Foto auszuwählen</span>
           <input type="file" id="photoInput" accept="image/*">
         </div>
-        <div class="photo-warn" id="photoWarn">Foto ist auch komprimiert zu groß (max. ~700 KB). Bitte ein kleineres Bild wählen oder unten einen Cloudinary-Link eintragen.</div>
+        <div class="photo-warn" id="photoWarn">Foto ist auch komprimiert zu groß. Bitte ein kleineres Bild wählen oder unten einen Cloudinary-Link eintragen.</div>
       </div>
       <div class="field">
-        <label>Cloudinary-Bild-URL (optional, hat Vorrang vor dem Foto oben)</label>
+        <label>Foto 2 (optional)</label>
+        <div class="photo-drop" id="photoDrop2">
+          <span id="photoDropText2">Klicken, um ein zweites Foto auszuwählen</span>
+          <input type="file" id="photoInput2" accept="image/*">
+        </div>
+        <div class="photo-warn" id="photoWarn2">Foto ist auch komprimiert zu groß. Bitte ein kleineres Bild wählen.</div>
+      </div>
+      <div class="field">
+        <label>Cloudinary-Bild-URL (optional, ersetzt Foto 1)</label>
         <input type="url" id="fCloudinaryUrl" placeholder="https://res.cloudinary.com/…">
       </div>
       <div class="row2">
@@ -353,6 +369,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
@@ -360,7 +377,7 @@ import {
   createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  initializeFirestore, collection, doc, setDoc, deleteDoc, getDocs, getDoc, query, orderBy
+  initializeFirestore, collection, doc, setDoc, deleteDoc, getDocs, getDoc, query, orderBy, increment, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // ============================================================
@@ -481,7 +498,8 @@ function runApp(){
     grid.innerHTML = '';
     listings.forEach((w, i) => {
       const lotNum = String(i + 1).padStart(3, '0');
-      const imgSrc = w.cloudinaryUrl || w.photo || null;
+      const images = [w.cloudinaryUrl || w.photo1 || w.photo || null, w.photo2 || null].filter(Boolean);
+      const imgSrc = images[0] || null;
       const subject = encodeURIComponent(`Anfrage: ${w.brand} ${w.model} (LOT ${lotNum})`);
       const body = encodeURIComponent(`Hallo,\n\nich interessiere mich für die ${w.brand} ${w.model} (Ref. ${w.ref||'-'}) für ${fmtMoney(w.askingPrice)}.\n\nViele Grüße`);
       const card = document.createElement('div');
@@ -506,16 +524,33 @@ function runApp(){
           </div>
         </div>`;
       if(imgSrc){
-        card.querySelector('.photo').addEventListener('click', () => openLightbox(imgSrc, `${w.brand} ${w.model}`));
+        card.querySelector('.photo').addEventListener('click', () => openLightbox(images, 0, `${w.brand} ${w.model}`));
       }
+      card.addEventListener('click', () => registerClick(w.id), { once: false });
       grid.appendChild(card);
     });
   }
 
-  function openLightbox(src, alt){
-    el('lightboxImg').src = src;
-    el('lightboxImg').alt = alt;
+  function registerClick(listingId){
+    // Zählt lautlos mit; Fehler (z. B. wenn Regeln fehlen) werden bewusst ignoriert, um den Besucher nicht zu stören
+    updateDoc(doc(db, 'public_listings', listingId), { clickCount: increment(1) }).catch(() => {});
+  }
+
+  let lightboxImages = [];
+  let lightboxIndex = 0;
+
+  function openLightbox(images, index, alt){
+    lightboxImages = images;
+    lightboxIndex = index;
+    showLightboxImage(alt);
+    const hasMultiple = images.length > 1;
+    el('lightboxPrev').style.display = hasMultiple ? 'inline-block' : 'none';
+    el('lightboxNext').style.display = hasMultiple ? 'inline-block' : 'none';
     el('lightboxOverlay').classList.add('open');
+  }
+  function showLightboxImage(alt){
+    el('lightboxImg').src = lightboxImages[lightboxIndex];
+    el('lightboxImg').alt = alt || '';
   }
   function closeLightbox(){
     el('lightboxOverlay').classList.remove('open');
@@ -523,7 +558,21 @@ function runApp(){
   }
   el('lightboxClose').addEventListener('click', closeLightbox);
   el('lightboxOverlay').addEventListener('click', (e) => { if(e.target.id === 'lightboxOverlay') closeLightbox(); });
-  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeLightbox(); });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeLightbox();
+    if(e.key === 'ArrowLeft') el('lightboxPrev').click();
+    if(e.key === 'ArrowRight') el('lightboxNext').click();
+  });
+  el('lightboxPrev').addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+    showLightboxImage();
+  });
+  el('lightboxNext').addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxIndex = (lightboxIndex + 1) % lightboxImages.length;
+    showLightboxImage();
+  });
 
   // ============ AUTH ============
   let authMode = 'login';
@@ -613,6 +662,13 @@ function runApp(){
       const q = query(collection(db, 'users', currentUid, 'watches'), orderBy('createdAt', 'asc'));
       const snap = await getDocs(q);
       collectionData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Klick-Zähler aus den öffentlichen Verkaufseinträgen ergänzen (nur lokal, nicht Teil des privaten Dokuments)
+      await Promise.all(collectionData.filter(w => w.forSale).map(async (w) => {
+        try{
+          const pub = await getDoc(doc(db, 'public_listings', w.id));
+          w._clickCount = pub.exists() ? (pub.data().clickCount || 0) : 0;
+        }catch(e){ w._clickCount = 0; }
+      }));
     }catch(e){
       toast('Archiv konnte nicht geladen werden.', true);
       collectionData = [];
@@ -632,7 +688,7 @@ function runApp(){
     return {
       brand: w.brand, model: w.model, ref: w.ref || '', serial: maskSerial(w.serial),
       caliber: w.caliber || '', year: w.year || '', condition: w.condition || '', askingPrice: w.askingPrice ?? null,
-      photo: w.photo || null, cloudinaryUrl: w.cloudinaryUrl || '',
+      photo1: w.photo1 || w.photo || null, photo2: w.photo2 || null, cloudinaryUrl: w.cloudinaryUrl || '',
       ownerId: currentUid, createdAt: w.createdAt,
     };
   }
@@ -640,7 +696,8 @@ function runApp(){
   async function syncPublicListing(w){
     const ref = doc(db, 'public_listings', w.id);
     if(w.forSale){
-      await setDoc(ref, publicSubset(w));
+      // merge:true, damit ein bestehender clickCount beim Bearbeiten nicht überschrieben wird
+      await setDoc(ref, publicSubset(w), { merge: true });
     } else {
       try{ await deleteDoc(ref); }catch(e){ /* may not exist */ }
     }
@@ -682,13 +739,13 @@ function runApp(){
 
     filtered.forEach((w, i) => {
       const lotNum = String(collectionData.findIndex(c => c.id === w.id) + 1).padStart(3, '0');
-      const imgSrc = w.cloudinaryUrl || w.photo || null;
+      const imgSrc = w.cloudinaryUrl || w.photo1 || w.photo || null;
       const card = document.createElement('div');
       card.className = 'card';
       card.style.animationDelay = (i * 0.03) + 's';
       card.innerHTML = `
         <div class="lot-tag"><span class="l">LOT</span><span class="n">${lotNum}</span></div>
-        ${w.forSale ? '<div class="for-sale-badge">Zum Verkauf</div>' : ''}
+        ${w.forSale ? `<div class="for-sale-badge">Zum Verkauf${w._clickCount !== undefined ? ` · ${w._clickCount} Aufrufe` : ''}</div>` : ''}
         <div class="photo">${imgSrc ? `<img src="${imgSrc}" alt="">` : 'Kein Foto'}</div>
         <div class="info">
           <div class="brand-name">${escapeHtml(w.brand)}</div>
@@ -707,13 +764,17 @@ function runApp(){
   const formTitle = el('formTitle');
   const deleteBtn = el('deleteBtn');
   const photoWarn = el('photoWarn');
+  const photoWarn2 = el('photoWarn2');
+  let currentPhotoData2 = null;
 
   function openForm(watch){
     editingId = watch ? watch.id : null;
     formTitle.textContent = watch ? 'Uhr bearbeiten' : 'Uhr erfassen';
     deleteBtn.style.display = watch ? 'inline-block' : 'none';
-    currentPhotoData = watch ? (watch.photo || null) : null;
+    currentPhotoData = watch ? (watch.photo1 || watch.photo || null) : null;
+    currentPhotoData2 = watch ? (watch.photo2 || null) : null;
     photoWarn.style.display = 'none';
+    photoWarn2.style.display = 'none';
 
     el('fForSale').checked = watch ? !!watch.forSale : false;
     el('fCloudinaryUrl').value = watch ? (watch.cloudinaryUrl||'') : '';
@@ -729,11 +790,10 @@ function runApp(){
     el('fBoxPapers').value = watch ? (watch.boxPapers||'Vollständig (Box & Papiere)') : 'Vollständig (Box & Papiere)';
     el('fNotes').value = watch ? (watch.notes||'') : '';
 
-    const drop = el('photoDrop');
-    const existingImg = drop.querySelector('img');
-    if(existingImg) existingImg.remove();
-    el('photoDropText').textContent = 'Klicken, um ein Foto auszuwählen';
-    if(currentPhotoData) showPhotoPreview(currentPhotoData);
+    resetPhotoDrop('photoDrop', 'photoDropText', 'Klicken, um ein Foto auszuwählen');
+    resetPhotoDrop('photoDrop2', 'photoDropText2', 'Klicken, um ein zweites Foto auszuwählen');
+    if(currentPhotoData) showPhotoPreview('photoDrop', 'photoDropText', currentPhotoData);
+    if(currentPhotoData2) showPhotoPreview('photoDrop2', 'photoDropText2', currentPhotoData2);
 
     formOverlay.classList.add('open');
     el('fBrand').focus();
@@ -744,55 +804,69 @@ function runApp(){
     watchForm.reset();
     editingId = null;
     currentPhotoData = null;
+    currentPhotoData2 = null;
   }
 
-  function showPhotoPreview(dataUrl){
-    const drop = el('photoDrop');
+  function resetPhotoDrop(dropId, textId, label){
+    const drop = el(dropId);
+    const existingImg = drop.querySelector('img');
+    if(existingImg) existingImg.remove();
+    el(textId).textContent = label;
+  }
+
+  function showPhotoPreview(dropId, textId, dataUrl){
+    const drop = el(dropId);
     let img = drop.querySelector('img');
     if(!img){ img = document.createElement('img'); drop.appendChild(img); }
     img.src = dataUrl;
-    el('photoDropText').textContent = 'Foto ändern';
+    el(textId).textContent = 'Foto ändern';
   }
 
   el('photoDrop').addEventListener('click', () => el('photoInput').click());
+  el('photoDrop2').addEventListener('click', () => el('photoInput2').click());
 
-  el('photoInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
-    photoWarn.style.display = 'none';
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        // Probiert von bestmöglicher zu niedrigerer Qualität, bis das Ergebnis unters Firestore-Limit passt
-        const steps = [
-          [1000, 0.82],
-          [800, 0.70],
-          [600, 0.60],
-          [400, 0.50],
-        ];
-        tryCompress(0);
-        function tryCompress(i){
-          if(i >= steps.length){
-            photoWarn.style.display = 'block';
-            currentPhotoData = null;
-            return;
-          }
-          const [maxDim, quality] = steps[i];
-          compressImage(img, maxDim, quality, (result) => {
-            if(result.length > MAX_BASE64_LEN){
-              tryCompress(i + 1);
-            } else {
-              currentPhotoData = result;
-              showPhotoPreview(result);
+  function handlePhotoUpload(inputId, dropId, textId, warnEl, onDone){
+    el(inputId).addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      warnEl.style.display = 'none';
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          // Probiert von bestmöglicher zu niedrigerer Qualität, bis das Ergebnis unters Firestore-Limit passt
+          const steps = [
+            [1000, 0.82],
+            [800, 0.70],
+            [600, 0.60],
+            [400, 0.50],
+          ];
+          tryCompress(0);
+          function tryCompress(i){
+            if(i >= steps.length){
+              warnEl.style.display = 'block';
+              onDone(null);
+              return;
             }
-          });
-        }
+            const [maxDim, quality] = steps[i];
+            compressImage(img, maxDim, quality, (result) => {
+              if(result.length > MAX_BASE64_LEN){
+                tryCompress(i + 1);
+              } else {
+                onDone(result);
+                showPhotoPreview(dropId, textId, result);
+              }
+            });
+          }
+        };
+        img.src = ev.target.result;
       };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  handlePhotoUpload('photoInput', 'photoDrop', 'photoDropText', photoWarn, (result) => { currentPhotoData = result; });
+  handlePhotoUpload('photoInput2', 'photoDrop2', 'photoDropText2', photoWarn2, (result) => { currentPhotoData2 = result; });
 
   function compressImage(img, maxDim, quality, cb){
     let w = img.width, h = img.height;
@@ -801,7 +875,7 @@ function runApp(){
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    cb(canvas.toDataURL('image/jpeg', quality));
+    cb(canvas.toDataURL('image/webp', quality));
   }
 
   el('addBtn').addEventListener('click', () => openForm(null));
@@ -827,7 +901,8 @@ function runApp(){
       boxPapers: el('fBoxPapers').value,
       notes: el('fNotes').value.trim(),
       cloudinaryUrl: el('fCloudinaryUrl').value.trim(),
-      photo: currentPhotoData || null,
+      photo1: currentPhotoData || null,
+      photo2: currentPhotoData2 || null,
       createdAt: editingId ? (collectionData.find(w=>w.id===editingId)?.createdAt || Date.now()) : Date.now(),
     };
     try{
@@ -868,11 +943,15 @@ function runApp(){
     const w = collectionData.find(c => c.id === id);
     if(!w) return;
     const lotNum = String(collectionData.findIndex(c => c.id === id) + 1).padStart(3, '0');
-    const imgSrc = w.cloudinaryUrl || w.photo || null;
+    const imgSrc = w.cloudinaryUrl || w.photo1 || w.photo || null;
+    const img2Src = w.photo2 || null;
     detailModal.innerHTML = `
       <h2>LOT ${lotNum} · ${escapeHtml(w.brand)} ${w.forSale ? '· <span style="color:var(--gold); font-size:14px;">Zum Verkauf</span>' : ''}</h2>
       <div class="detail-grid">
-        <div class="dphoto">${imgSrc ? `<img src="${imgSrc}" alt="">` : 'Kein Foto'}</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="dphoto">${imgSrc ? `<img src="${imgSrc}" alt="">` : 'Kein Foto'}</div>
+          ${img2Src ? `<div class="dphoto"><img src="${img2Src}" alt=""></div>` : ''}
+        </div>
         <div class="dl">
           <div><div class="dt">Modell</div><div class="dd">${escapeHtml(w.model)}</div></div>
           <div><div class="dt">Referenz</div><div class="dd">${escapeHtml(w.ref)||'—'}</div></div>
@@ -883,6 +962,7 @@ function runApp(){
           <div><div class="dt">Verkaufspreis</div><div class="dd">${fmtMoney(w.askingPrice)}</div></div>
           <div><div class="dt">Geschätzter Wert (privat)</div><div class="dd">${fmtMoney(w.estValue)}</div></div>
           <div><div class="dt">Box &amp; Papiere</div><div class="dd">${escapeHtml(w.boxPapers)||'—'}</div></div>
+          ${w.forSale ? `<div><div class="dt">Aufrufe (Verkaufsseite)</div><div class="dd">${w._clickCount ?? 0}</div></div>` : ''}
         </div>
       </div>
       ${w.notes ? `<div class="dt" style="margin-bottom:6px;">Notizen (privat)</div><div class="notes-box">${escapeHtml(w.notes)}</div>` : ''}
@@ -901,6 +981,124 @@ function runApp(){
   detailOverlay.addEventListener('click', (e) => { if(e.target === detailOverlay) detailOverlay.classList.remove('open'); });
 
   searchInput.addEventListener('input', render);
+
+  // ============ ADMIN: JSON EXPORT / IMPORT ============
+  el('exportJsonBtn').addEventListener('click', () => {
+    const dataStr = JSON.stringify(collectionData.map(({_clickCount, ...rest}) => rest), null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `provenance-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup heruntergeladen.');
+  });
+
+  el('importJsonBtn').addEventListener('click', () => el('importJsonInput').click());
+
+  el('importJsonInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      let items;
+      try{
+        items = JSON.parse(ev.target.result);
+        if(!Array.isArray(items)) throw new Error('kein Array');
+      }catch(err){
+        toast('Ungültige JSON-Datei.', true);
+        e.target.value = '';
+        return;
+      }
+      if(!confirm(`${items.length} Uhr(en) importieren? Bestehende Einträge mit gleicher ID werden aktualisiert, alle anderen bleiben erhalten.`)){
+        e.target.value = '';
+        return;
+      }
+      let ok = 0, failed = 0;
+      for(const item of items){
+        try{
+          const watch = { ...item, id: item.id || genId() };
+          await saveWatchDoc(watch);
+          ok++;
+        }catch(err){ failed++; }
+      }
+      await loadCollection();
+      toast(`${ok} importiert${failed ? `, ${failed} fehlgeschlagen` : ''}.`, failed > 0);
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  // ============ ADMIN: PDF-EXPORT ============
+  el('exportPdfBtn').addEventListener('click', async () => {
+    if(collectionData.length === 0){ toast('Archiv ist leer.', true); return; }
+    if(!window.jspdf){ toast('PDF-Bibliothek konnte nicht geladen werden.', true); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 18;
+
+    collectionData.forEach((w, i) => {
+      if(i > 0) doc.addPage();
+      const lotNum = String(i + 1).padStart(3, '0');
+      let y = margin;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text(`LOT ${lotNum} — ${w.brand || ''} ${w.model || ''}`, margin, y);
+      y += 10;
+
+      const imgSrc = w.photo1 || w.photo || w.cloudinaryUrl || null;
+      if(imgSrc && imgSrc.startsWith('data:image')){
+        try{
+          const fmt = (imgSrc.match(/^data:image\/(\w+);/) || [,'JPEG'])[1].toUpperCase();
+          const imgW = pageW - margin * 2;
+          const imgH = 90;
+          doc.addImage(imgSrc, fmt, margin, y, imgW, imgH, undefined, 'FAST');
+          y += imgH + 10;
+        }catch(err){ /* Bildformat evtl. nicht unterstützt, PDF trotzdem ohne Bild erstellen */ }
+      }
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      const rows = [
+        ['Referenz', w.ref || '—'],
+        ['Seriennummer', w.serial || '—'],
+        ['Baujahr', w.year || '—'],
+        ['Kaliber', w.caliber || '—'],
+        ['Zustand', w.condition || '—'],
+        ['Box & Papiere', w.boxPapers || '—'],
+        ['Verkaufspreis', fmtMoney(w.askingPrice)],
+        ['Geschätzter Wert', fmtMoney(w.estValue)],
+        ['Status', w.forSale ? 'Zum Verkauf' : 'Nicht gelistet'],
+      ];
+      rows.forEach(([label, value]) => {
+        if(y > pageH - margin - 20) return;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${label}:`, margin, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(value), margin + 45, y);
+        y += 7;
+      });
+
+      if(w.notes){
+        y += 3;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Notizen:', margin, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(w.notes, pageW - margin * 2);
+        doc.text(lines, margin, y);
+      }
+    });
+
+    doc.save(`provenance-archiv-${new Date().toISOString().slice(0,10)}.pdf`);
+    toast('PDF erstellt.');
+  });
 
   route();
 }
